@@ -49,6 +49,15 @@ function player:Init(world)
     self.maxHealth = 100
     self.health = self.maxHealth
 
+    self.thirst = 100
+
+    biribiri:CreateAndStartTimer(2, function ()
+        if self.running then
+            self.thirst = math.clamp(self.thirst - math.floor(math.random(0,30) / 20), 0, 100)
+        end
+        
+    end, true)
+
     self.speed = 4000
     self.jumpHeight = 2500
     self.dashSpeed = 2000
@@ -108,18 +117,33 @@ function player:Init(world)
             rotation = 0,
             upgrades = {
                 {
-                    [items.stone] = 3
-                },
-                {
                     [items.stone] = 5
                 },
                 {
-                    [items.stone] = 7,
-                    [items.copper] = 3
+                    [items.stone] = 10
                 },
                 {
                     [items.stone] = 10,
+                    [items.copper] = 3
+                },
+                {
+                    [items.stone] = 15,
                     [items.copper] = 5
+                },
+                {
+                    [items.stone] = 20,
+                    [items.copper] = 5,
+                    [items.iron] = 1,
+                },
+                {
+                    [items.stone] = 25,
+                    [items.copper] = 7,
+                    [items.iron] = 3,
+                },
+                {
+                    [items.stone] = 25,
+                    [items.copper] = 10,
+                    [items.iron] = 5,
                 },
             },
             strength = 0,
@@ -133,10 +157,13 @@ function player:Init(world)
 
                 for _, ore in ipairs(WorldGen.ores) do
                     if biribiri.distance(x, y, ore.x, ore.y) < 75 and this.strength < MINIMUM_ORE_TIER[ore.type] then
-                        uis.game:addNotif("you cant mine this stupid")
+                        uis.game:addNotif("You need at least tier "..MINIMUM_ORE_TIER[ore.type].." to mine this!")
                     end
                     if biribiri.distance(x, y, ore.x, ore.y) < 75 and ore.progress ~= 0 and this.strength >= MINIMUM_ORE_TIER[ore.type] then
                         ore.progress = math.clamp(ore.progress - (this.strength + 1), 0, math.huge)
+                        if love.math.random(1,4) == 1 then
+                            self.thirst = math.clamp(self.thirst - 1, 0, 100)
+                        end
                         if ore.progress == 0 then
                             uis.game:addNotif("Collected +1 " .. itemData[items[ore.type]].name)
                             self.inventory[items[ore.type]].amount = self.inventory[items[ore.type]].amount + 1
@@ -165,6 +192,29 @@ function player:Init(world)
                     [items.stone] = 10,
                     [items.copper] = 5
                 },
+                {
+                    [items.stone] = 15,
+                    [items.copper] = 7
+                },
+                {
+                    [items.stone] = 15,
+                    [items.copper] = 10
+                },
+                {
+                    [items.stone] = 15,
+                    [items.copper] = 10,
+                    [items.iron] = 1,
+                },
+                {
+                    [items.stone] = 15,
+                    [items.copper] = 12,
+                    [items.iron] = 2,
+                },
+                {
+                    [items.stone] = 15,
+                    [items.copper] = 15,
+                    [items.iron] = 3,
+                },
             },
             strength = 0,
             debounce = 0,
@@ -177,7 +227,10 @@ function player:Init(world)
 
                 for _, enemy in ipairs(enemies) do
                     if biribiri.distance(x, y, enemy.body:getX(), enemy.body:getY()) < 75 then
-                        enemy.health = math.clamp(enemy.health - 1, 0, math.huge)
+                        if love.math.random(1,4) == 1 then
+                            self.thirst = math.clamp(self.thirst - 1, 0, 100)
+                        end
+                        enemy.health = math.clamp(enemy.health - ((this.strength * 0.5) + 1), 0, math.huge)
                     end
                 end
             end
@@ -345,6 +398,13 @@ function player:Update(dt)
         self.dashing = -1
     end
 
+    for _, water in ipairs(WorldGen.water) do
+        if biribiri.collision(self.body:getX(), self.body:getY(), 50, 50, water.x, water.y - 10, water.width, water.height) then
+            self.frame = 11
+            self.thirst = math.clamp(self.thirst + 0.01, 0, 100)
+        end
+    end
+
     self.dmgOverlay = math.clamp(self.dmgOverlay - dt * 3, 0, 1)
     self.lastDmg = self.health
 end
@@ -380,7 +440,8 @@ function player:Draw()
     love.graphics.draw(self.tools[self.equipped].img, math.sin(angle) * dist + px, math.cos(angle) * dist + py,
         self.tools[self.equipped].rotation, 1, 1, 0, 50)
 
-    love.graphics.draw(assets["img/heart.png"], self.heartQuads[self.heartFrame], 10, love.graphics.getHeight() - 60, 0, 1, 1)
+    love.graphics.draw(assets["img/droplet.png"], 10, love.graphics.getHeight() - 120, 0, 1, 1)
+    love.graphics.draw(assets["img/heart.png"], self.heartQuads[1], 10, love.graphics.getHeight() - 60, 0, 1, 1)
 end
 
 return player

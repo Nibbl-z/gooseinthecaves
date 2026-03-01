@@ -40,7 +40,7 @@ function enemy:new(x, y)
 
     biribiri:CreateAndStartTimer(0.5, function ()
         if object.dead then return end
-        print(math.abs(object.lastX - object.body:getX()))
+
         if math.abs(object.lastX - object.body:getX()) < 200 then
             object.lastX = object.body:getX()
             if object.grounded and math.abs(Player.body:getX() - object.body:getX()) > 100 then

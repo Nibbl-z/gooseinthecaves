@@ -11,6 +11,9 @@ uis = {
 
 enemies = {}
 
+peace = true
+gametime = 0
+
 function love.mousepressed(_, _, button)
     Player:mousepressed(button)
 end
@@ -37,6 +40,7 @@ function love.load()
 end
 
 function love.update(dt)
+    gametime = gametime + dt
     world:update(dt)
     Player:Update(dt)
     yan:update(dt)

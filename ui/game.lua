@@ -9,6 +9,20 @@ function ui:updateRequirements(tool, requirements)
     end
     table.clear(self.screen:get("upgrades"):get(tool .. "Requirements").children)
 
+    if requirements == nil then
+        local text = textlabel:new {
+            text = "Max upgrade reached!",
+            size = UDim2.new(1, 0, 0, 50),
+            backgroundcolor = Color.new(0, 0, 0, 0),
+            textcolor = Color.new(1, 1, 1, 1),
+            halign = "right",
+        }
+
+        text:setparent(self.screen:get("upgrades"):get(tool .. "Requirements")) 
+
+        return
+    end
+
     for id, amount in pairs(requirements) do
         local text = textlabel:new {
             text = itemData[id].name .. " x" .. tostring(amount),
@@ -36,7 +50,7 @@ function ui:addNotif(text)
         textsize = 24,
         backgroundcolor = Color.new(0, 0, 0, 0),
         textcolor = Color.new(0.6, 0.6, 0.6, 1),
-        halign = "left",
+        halign = "right",
     }
 
     label:setparent(self.screen:get("notifs"))
@@ -88,6 +102,8 @@ function ui:init()
                 },
                 pickaxeText = textlabel:new {
                     text = function()
+                        if Player.tools[1].strength == #Player.tools[1].upgrades then return "Pickaxe (Max Tier)" end
+
                         return "Pickaxe (Tier " ..
                         tostring(Player.tools[1].strength) .. "->" .. tostring(Player.tools[1].strength + 1) .. ")"
                     end,
@@ -117,6 +133,50 @@ function ui:init()
                             self:updateRequirements("pickaxe", TOOLS[1].upgrades[Player.tools[1].strength + 1])
                         end
                     end
+                },
+
+                ---
+                
+                sword = imagelabel:new {
+                    image = "img/sword.png",
+                    size = UDim2.new(0, 64, 0, 64),
+                    anchorpoint = Vector2.new(0.5, 0),
+                    position = UDim2.new(0.75, 0, 0, 60),
+                    backgroundcolor = Color.new(0, 0, 0, 0)
+                },
+                swordText = textlabel:new {
+                    text = function()
+                        if Player.tools[2].strength == #Player.tools[2].upgrades then return "Sword (Max Tier)" end
+
+                        return "Sword (Tier " ..
+                        tostring(Player.tools[2].strength) .. "->" .. tostring(Player.tools[2].strength + 1) .. ")"
+                    end,
+                    size = UDim2.new(0.5, 0, 0, 50),
+                    position = UDim2.new(0.5, 0, 0, 130),
+                    backgroundcolor = Color.new(0, 0, 0, 0),
+                    textcolor = Color.new(1, 1, 1, 1)
+                },
+                swordRequirements = uibase:new {
+                    size = UDim2.new(0.5, 0, 0.35, 0),
+                    position = UDim2.new(0.5, 0, 0, 170),
+                    backgroundcolor = Color.new(1, 1, 1, 0.2),
+                    layout = "list",
+                    listhalign = "center",
+                    listvalign = "top"
+                },
+                swordUpgrade = textlabel:new {
+                    size = UDim2.new(0.5, 0, 0.1, 0),
+                    position = UDim2.new(0.5, 0, 1, -10),
+                    anchorpoint = Vector2.new(0, 1),
+                    backgroundcolor = Color.new(0, 1, 0, 0.4),
+                    text = "Upgrade",
+                    textcolor = Color.new(1, 1, 1, 1),
+                    mousebutton1up = function()
+                        local result = Player:upgrade(2)
+                        if result == true then
+                            self:updateRequirements("sword", TOOLS[2].upgrades[Player.tools[2].strength + 1])
+                        end
+                    end
                 }
             }
         },
@@ -138,6 +198,24 @@ function ui:init()
                 return tostring(Player.health).."/"..tostring(Player.maxHealth).." HP"
             end,
             halign = "left"
+        },
+        thirst = textlabel:new {
+            size = UDim2.new(0.5,0,0,50),
+            position = UDim2.new(0,70,1,-70),
+            anchorpoint = Vector2.new(0,1),
+            textcolor = Color.new(0.3,0.3,1,1),
+            backgroundcolor = Color.new(0,0,0,0),
+            text = function ()
+                return tostring(math.floor(Player.thirst)).."/100 THIRST"
+            end,
+            halign = "left"
+        },
+
+        status = textlabel:new {
+            size = UDim2.new(1,0,0,50),
+            text = function ()
+                return (peace and "PEACE" or "HAZARD").." PHASE ends in 0:"..string.format("%02d", math.floor(60 - gametime))
+            end
         }
     }
 
@@ -176,6 +254,7 @@ function ui:init()
     end
 
     self:updateRequirements("pickaxe", TOOLS[1].upgrades[1])
+    self:updateRequirements("sword", TOOLS[2].upgrades[1])
 end
 
 return ui

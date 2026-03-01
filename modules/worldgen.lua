@@ -1,6 +1,7 @@
 local worldgen = {}
 worldgen.world = {}
 worldgen.ores = {}
+worldgen.water = {}
 
 function createNode(x, y, width, height)
     local body = love.physics.newBody(world, x + width / 2, y + height / 2, "static")
@@ -16,6 +17,17 @@ function createNode(x, y, width, height)
         body = body,
         shape = shape,
         fixture = fixture
+    }
+
+    return node
+end
+
+function createWater(x, y, width, height)
+    local node = {
+        x = x,
+        y = y,
+        width = width,
+        height = height
     }
 
     return node
@@ -80,11 +92,11 @@ function worldgen:generate()
     local height2 = 0
     local mult = 1.2
 
-    local x = -500
+    local x = -1000
     local between = false
     local betweenChange = 30
 
-    for _ = 1, 500 do
+    for i = 1, 1000 do
         dirChange = dirChange - 1
         betweenChange = betweenChange - 1
 
@@ -109,36 +121,49 @@ function worldgen:generate()
         height = height + love.math.random() * mult * (dir and 1 or -1) * 30
         height2 = math.clamp(height2 + love.math.random() * (mult / 2) * (dir and 1 or -1) * 20, -math.huge, 100)
 
-        local width = love.math.random(100,200)
+        local width = love.math.random(100,250)
 
-        local node = createNode(x, height + 1000, width, 500)
+        
+
+        if love.math.random(1,5) == 1 and width >= 160 then
+            table.insert(self.world, createNode(x, height + 1000, width/4, 1000))
+            table.insert(self.world, createNode(x + width/4, height + 1050, width/2, 1000))
+            table.insert(self.world, createNode(x + width - width/4, height + 1000, width/4, 1000))
+            table.insert(self.water, createWater(x + width/4, height + 1010, width/2, 40))
+        else
+            table.insert(self.world, createNode(x, height + 1000, width, 1000))
+            if love.math.random(1,4) == 1 then
+                table.insert(self.ores, createOre(x + width / 2, height + 980, pickOre()))
+            end
+        end
 
         if between then
             local abovenode = createNode(x, height2 + 550 + height, width, 150)
             table.insert(self.world, abovenode)
-        end
-
-        if love.math.random(1,4) == 1 then
-            table.insert(self.ores, createOre(x + width / 2, height + 980, pickOre()))
-        end
+        end 
 
         if love.math.random(1,4) == 1 and between then
             table.insert(self.ores, createOre(x + width / 2, height2 + 530 + height, pickOre()))
         end
 
         x = x + width
-        table.insert(self.world, node)
     end
 end
 
 function worldgen:draw()
+    for _, water in ipairs(self.water) do
+        love.graphics.draw(assets["img/water.png"], water.x - Player.camera.x + 25, water.y - Player.camera.y + 25, 0, water.width / 128, water.height / 128)
+    end
     for i, node in ipairs(self.world) do
-        love.graphics.rectangle("fill", node.x - Player.camera.x + 25, node.y - Player.camera.y + 25, node.width, node.height)
+
+        love.graphics.draw(assets["img/stone.png"], node.x - Player.camera.x + 25, node.y - Player.camera.y + 25, 0, node.width / 100, node.height / 100)
     end
 
     for _, ore in ipairs(self.ores) do
         drawOre(ore)
     end
+
+    
 end
 
 return worldgen
