@@ -125,8 +125,19 @@ function ui:init()
             size = UDim2.new(1, 0, 1, 0),
             backgroundcolor = Color.new(0, 0, 0, 0),
             layout = "list",
-            listhalign = "left",
+            listhalign = "right",
             listvalign = "bottom",
+        },
+        health = textlabel:new {
+            size = UDim2.new(0.5,0,0,50),
+            position = UDim2.new(0,70,1,-10),
+            anchorpoint = Vector2.new(0,1),
+            textcolor = Color.new(1,0,0,1),
+            backgroundcolor = Color.new(0,0,0,0),
+            text = function ()
+                return tostring(Player.health).."/"..tostring(Player.maxHealth).." HP"
+            end,
+            halign = "left"
         }
     }
 

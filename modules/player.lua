@@ -40,6 +40,7 @@ function player:Init(world)
     self.shape = love.physics.newRectangleShape(50, 50)
     self.fixture = love.physics.newFixture(self.body, self.shape)
     self.fixture:setRestitution(0)
+    self.fixture:setUserData("player")
 
     self.grounded = false
     self.flipped = false
@@ -48,8 +49,8 @@ function player:Init(world)
     self.maxHealth = 100
     self.health = self.maxHealth
 
-    self.speed = 6000
-    self.jumpHeight = 3500
+    self.speed = 4000
+    self.jumpHeight = 2500
     self.dashSpeed = 2000
 
     self.c = Vector2.new(0, 0)
@@ -82,6 +83,23 @@ function player:Init(world)
     self.dmgOverlay = 0.0
     self.lastDmg = self.maxHealth
 
+    self.heartSpritesheet = assets["img/heart.png"]
+    self.heartQuads = {}
+    self.heartFrame = 1
+    local w, h = 51, 50
+
+    for y = 0, self.heartSpritesheet:getHeight() - h, h do
+        for x = 0, self.heartSpritesheet:getWidth(), w do
+            table.insert(self.heartQuads, love.graphics.newQuad(x, y, w, h, self.heartSpritesheet:getDimensions()))
+        end
+    end
+
+    biribiri:CreateAndStartTimer(0.1, function ()
+        self.heartFrame = self.heartFrame + 1
+        if self.heartFrame == 14 then
+            self.heartFrame = 1
+        end
+    end, true)
 
     TOOLS = {
         {
@@ -151,7 +169,17 @@ function player:Init(world)
             strength = 0,
             debounce = 0,
             click = function(self, this, x, y)
-                print("owie")
+                if this.debounce ~= 0 then return end
+                this.rotation = math.rad(45)
+                local db = math.clamp((0.5 - (this.strength / 40)), 0.1, 1000)
+                tween:new(this, TweenInfo.new(db), { rotation = 0 }):play()
+                this.debounce = db
+
+                for _, enemy in ipairs(enemies) do
+                    if biribiri.distance(x, y, enemy.body:getX(), enemy.body:getY()) < 75 then
+                        enemy.health = math.clamp(enemy.health - 1, 0, math.huge)
+                    end
+                end
             end
         }
     }
@@ -209,6 +237,11 @@ local DASH_DIRECTIONS = {
     d = { x = 1, y = 0 },
     s = { x = 0, y = 1 }
 }
+
+function player:takeDamage()
+    if self.dmgOverlay > 0.0 then return end
+    self.health = self.health - 1
+end
 
 function player:Update(dt)
     for k, v in pairs(self.tools) do
@@ -346,6 +379,8 @@ function player:Draw()
 
     love.graphics.draw(self.tools[self.equipped].img, math.sin(angle) * dist + px, math.cos(angle) * dist + py,
         self.tools[self.equipped].rotation, 1, 1, 0, 50)
+
+    love.graphics.draw(assets["img/heart.png"], self.heartQuads[self.heartFrame], 10, love.graphics.getHeight() - 60, 0, 1, 1)
 end
 
 return player
