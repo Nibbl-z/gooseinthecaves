@@ -31,7 +31,7 @@ itemData = {
 }
 
 TOOLS = {
-    
+
 }
 
 function player:Init(world)
@@ -47,12 +47,12 @@ function player:Init(world)
 
     self.maxHealth = 100
     self.health = self.maxHealth
-    
+
     self.speed = 6000
     self.jumpHeight = 3500
     self.dashSpeed = 2000
 
-    self.c = Vector2.new(0,0)
+    self.c = Vector2.new(0, 0)
     self.camera = Vector2.new(0, 0)
     self.camoffset = Vector2.new(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
 
@@ -105,28 +105,63 @@ function player:Init(world)
                 },
             },
             strength = 0,
-            click = function (self, this, x, y)
+            debounce = 0,
+            click = function(self, this, x, y)
+                if this.debounce ~= 0 then return end
                 this.rotation = math.rad(45)
-
-                tween:new(this, TweenInfo.new(0.3), {rotation = 0}):play()
+                local db = math.clamp((0.5 - (this.strength / 40)), 0.1, 1000)
+                tween:new(this, TweenInfo.new(db), { rotation = 0 }):play()
+                this.debounce = db
 
                 for _, ore in ipairs(WorldGen.ores) do
-                    if biribiri.distance(x, y, ore.x, ore.y) < 75 and ore.progress ~= 0 then
-                        ore.progress = math.clamp(ore.progress - 1, 0, math.huge)
+                    if biribiri.distance(x, y, ore.x, ore.y) < 75 and this.strength < MINIMUM_ORE_TIER[ore.type] then
+                        uis.game:addNotif("you cant mine this stupid")
+                    end
+                    if biribiri.distance(x, y, ore.x, ore.y) < 75 and ore.progress ~= 0 and this.strength >= MINIMUM_ORE_TIER[ore.type] then
+                        ore.progress = math.clamp(ore.progress - (this.strength + 1), 0, math.huge)
                         if ore.progress == 0 then
+                            uis.game:addNotif("Collected +1 " .. itemData[items[ore.type]].name)
                             self.inventory[items[ore.type]].amount = self.inventory[items[ore.type]].amount + 1
                         end
                     end
                 end
             end
+        },
+
+        {
+            id = "sword",
+            img = assets["img/sword.png"],
+            rotation = 0,
+            upgrades = {
+                {
+                    [items.stone] = 3
+                },
+                {
+                    [items.stone] = 5
+                },
+                {
+                    [items.stone] = 7,
+                    [items.copper] = 3
+                },
+                {
+                    [items.stone] = 10,
+                    [items.copper] = 5
+                },
+            },
+            strength = 0,
+            debounce = 0,
+            click = function(self, this, x, y)
+                print("owie")
+            end
         }
     }
     self.tools = {
-        [1] = TOOLS[1]
+        [1] = TOOLS[1],
+        [2] = TOOLS[2]
     }
 
     self.inventory = {
-        
+
     }
 
     for k, v in pairs(items) do
@@ -169,13 +204,17 @@ function player:upgrade(tool)
 end
 
 local DASH_DIRECTIONS = {
-    a = {x = -1, y = 0},
-    w = {x = 0, y = -1},
-    d = {x = 1, y = 0},
-    s = {x = 0, y = 1}
+    a = { x = -1, y = 0 },
+    w = { x = 0, y = -1 },
+    d = { x = 1, y = 0 },
+    s = { x = 0, y = 1 }
 }
 
 function player:Update(dt)
+    for k, v in pairs(self.tools) do
+        v.debounce = math.clamp(v.debounce - dt, 0, 100)
+    end
+
     if self.health ~= self.lastDmg then
         --assets["audio/death.wav"]:play()
         self.dmgOverlay = 1.0
@@ -190,7 +229,7 @@ function player:Update(dt)
     if love.keyboard.isDown("a") then
         self.body:applyLinearImpulse(-self.speed * dt, 0)
         self.flipped = false
-         self.running = true
+        self.running = true
     end
 
     if love.keyboard.isDown("d") then
@@ -213,8 +252,7 @@ function player:Update(dt)
     end
 
     if love.keyboard.isDown("lshift") and self.dashCooldown <= 0 then
-       
-        local dashDir = {x = 0, y = 0}
+        local dashDir = { x = 0, y = 0 }
 
         for key, value in pairs(DASH_DIRECTIONS) do
             if love.keyboard.isDown(key) then
@@ -261,7 +299,7 @@ function player:Update(dt)
                 self.runningFrame = 1
             end
         end
-        
+
 
         self.frame = self.runningFrame
     else
@@ -273,7 +311,7 @@ function player:Update(dt)
     if self.dashFrameTimer <= 0 then
         self.dashing = -1
     end
-    
+
     self.dmgOverlay = math.clamp(self.dmgOverlay - dt * 3, 0, 1)
     self.lastDmg = self.health
 end
@@ -290,7 +328,7 @@ function player:mousepressed(button)
 end
 
 function player:reset()
-    self.body:setLinearVelocity(0,0)
+    self.body:setLinearVelocity(0, 0)
     self.body:setX(0)
     self.body:setY(0)
     self.health = self.maxHealth
@@ -306,7 +344,8 @@ function player:Draw()
     local angle = math.atan2(mx, my)
     local dist = math.clamp(math.sqrt((mx) ^ 2 + (my) ^ 2), 10, 200)
 
-    love.graphics.draw(self.tools[self.equipped].img, math.sin(angle) * dist + px, math.cos(angle) * dist + py, self.tools[self.equipped].rotation, 1, 1, 0, 50)
+    love.graphics.draw(self.tools[self.equipped].img, math.sin(angle) * dist + px, math.cos(angle) * dist + py,
+        self.tools[self.equipped].rotation, 1, 1, 0, 50)
 end
 
 return player

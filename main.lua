@@ -4,7 +4,7 @@ require "yan"
 
 world = love.physics.newWorld(0, 2000, true)
 
-local uis = {
+uis = {
     game = require "ui.game"
 }
 
@@ -27,6 +27,7 @@ function love.update(dt)
     world:update(dt)
     Player:Update(dt)
     yan:update(dt)
+    biribiri:Update(dt)
 end
 
 function love.keypressed(key)
@@ -34,6 +35,20 @@ function love.keypressed(key)
 
     if key == "e" then
         uis.game.inventoryOpen = not uis.game.inventoryOpen
+        uis.game.upgradesOpen = false
+    end
+
+    if key == "r" then
+        uis.game.upgradesOpen = not uis.game.upgradesOpen
+        uis.game.inventoryOpen = false
+    end
+
+    if key == "1" then
+        Player.equipped = 1
+    end
+
+    if key == "2" then
+        Player.equipped = 2
     end
 end
 

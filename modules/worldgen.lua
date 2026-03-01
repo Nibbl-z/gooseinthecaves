@@ -23,8 +23,14 @@ end
 
 local ORE_STRENGTHS = {
     stone = 3,
-    copper = 10,
-    iron = 50
+    copper = 15,
+    iron = 75
+}
+
+MINIMUM_ORE_TIER = {
+    stone = 0,
+    copper = 1,
+    iron = 3
 }
 
 function createOre(x, y, type)

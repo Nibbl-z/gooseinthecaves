@@ -1,36 +1,57 @@
 require "yan"
+require "biribiri"
 local ui = {}
 
 function ui:updateRequirements(tool, requirements)
-    for _, v in ipairs(self.screen:get("upgrades"):get(tool.."Requirements").children) do
+    for _, v in ipairs(self.screen:get("upgrades"):get(tool .. "Requirements").children) do
         v.parent = nil
         v = nil
     end
-    table.clear(self.screen:get("upgrades"):get(tool.."Requirements").children)
+    table.clear(self.screen:get("upgrades"):get(tool .. "Requirements").children)
 
     for id, amount in pairs(requirements) do
         local text = textlabel:new {
-            text = itemData[id].name .." x"..tostring(amount),
-            size = UDim2.new(1,0,0,50),
-            backgroundcolor = Color.new(0,0,0,0),
-            textcolor = Color.new(1,1,1,1),
+            text = itemData[id].name .. " x" .. tostring(amount),
+            size = UDim2.new(1, 0, 0, 50),
+            backgroundcolor = Color.new(0, 0, 0, 0),
+            textcolor = Color.new(1, 1, 1, 1),
             halign = "right",
             children = {
                 image = imagelabel:new {
-                    size = UDim2.new(0,50,0,50),
+                    size = UDim2.new(0, 50, 0, 50),
                     image = itemData[id].img,
-                    backgroundcolor = Color.new(0,0,0,0)
+                    backgroundcolor = Color.new(0, 0, 0, 0)
                 }
             }
         }
 
-        text:setparent(self.screen:get("upgrades"):get(tool.."Requirements"))
+        text:setparent(self.screen:get("upgrades"):get(tool .. "Requirements"))
     end
+end
+
+function ui:addNotif(text)
+    local label = textlabel:new {
+        text = text,
+        size = UDim2.new(0.6, 0, 0, 24),
+        textsize = 24,
+        backgroundcolor = Color.new(0, 0, 0, 0),
+        textcolor = Color.new(0.6, 0.6, 0.6, 1),
+        halign = "left",
+    }
+
+    label:setparent(self.screen:get("notifs"))
+
+    biribiri:CreateAndStartTimer(3, function()
+        tween:new(label, TweenInfo.new(0.5), { textcolor = Color.new(1, 1, 1, 0) }):play()
+        biribiri:CreateAndStartTimer(0.5, function()
+            table.remove(self.screen:get("notifs").children, table.find(self.screen:get("notifs").children, label))
+        end)
+    end)
 end
 
 function ui:init()
     self.inventoryOpen = false
-    self.upgradesOpen = true
+    self.upgradesOpen = false
 
     self.screen = screen:new {
         inventory = uibase:new {
@@ -54,42 +75,58 @@ function ui:init()
             children = {
                 title = textlabel:new {
                     text = "Upgrade Tools",
-                    size = UDim2.new(1,0,0,50),
-                    backgroundcolor = Color.new(0,0,0,0),
-                    textcolor = Color.new(1,1,1,1)
+                    size = UDim2.new(1, 0, 0, 50),
+                    backgroundcolor = Color.new(0, 0, 0, 0),
+                    textcolor = Color.new(1, 1, 1, 1)
                 },
                 pickaxe = imagelabel:new {
                     image = "img/pickaxe.png",
-                    size = UDim2.new(0,64,0,64),
-                    anchorpoint = Vector2.new(0.5,0),
-                    position = UDim2.new(0.25,0,0,60),
-                    backgroundcolor = Color.new(0,0,0,0)
+                    size = UDim2.new(0, 64, 0, 64),
+                    anchorpoint = Vector2.new(0.5, 0),
+                    position = UDim2.new(0.25, 0, 0, 60),
+                    backgroundcolor = Color.new(0, 0, 0, 0)
+                },
+                pickaxeText = textlabel:new {
+                    text = function()
+                        return "Pickaxe (Tier " ..
+                        tostring(Player.tools[1].strength) .. "->" .. tostring(Player.tools[1].strength + 1) .. ")"
+                    end,
+                    size = UDim2.new(0.5, 0, 0, 50),
+                    position = UDim2.new(0, 0, 0, 130),
+                    backgroundcolor = Color.new(0, 0, 0, 0),
+                    textcolor = Color.new(1, 1, 1, 1)
                 },
                 pickaxeRequirements = uibase:new {
-                    size = UDim2.new(0.5,0,0.4,0),
-                    position = UDim2.new(0,0,0,130),
-                    backgroundcolor = Color.new(1,1,1,0.2),
+                    size = UDim2.new(0.5, 0, 0.35, 0),
+                    position = UDim2.new(0, 0, 0, 170),
+                    backgroundcolor = Color.new(1, 1, 1, 0.2),
                     layout = "list",
                     listhalign = "center",
                     listvalign = "top"
                 },
                 pickaxeUpgrade = textlabel:new {
-                    size = UDim2.new(0.5,0,0.1,0),
-                    position = UDim2.new(0,0,1,-10),
-                    anchorpoint = Vector2.new(0,1),
-                    backgroundcolor = Color.new(0,1,0,0.4),
+                    size = UDim2.new(0.5, 0, 0.1, 0),
+                    position = UDim2.new(0, 0, 1, -10),
+                    anchorpoint = Vector2.new(0, 1),
+                    backgroundcolor = Color.new(0, 1, 0, 0.4),
                     text = "Upgrade",
-                    textcolor = Color.new(1,1,1,1),
-                    mousebutton1up = function ()
+                    textcolor = Color.new(1, 1, 1, 1),
+                    mousebutton1up = function()
                         local result = Player:upgrade(1)
                         if result == true then
-                            print("good")
-
                             self:updateRequirements("pickaxe", TOOLS[1].upgrades[Player.tools[1].strength + 1])
                         end
                     end
                 }
             }
+        },
+
+        notifs = uibase:new {
+            size = UDim2.new(1, 0, 1, 0),
+            backgroundcolor = Color.new(0, 0, 0, 0),
+            layout = "list",
+            listhalign = "left",
+            listvalign = "bottom",
         }
     }
 
