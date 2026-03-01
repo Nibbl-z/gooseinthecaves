@@ -22,7 +22,9 @@ function createNode(x, y, width, height)
 end
 
 local ORE_STRENGTHS = {
-    iron = 3
+    stone = 3,
+    copper = 10,
+    iron = 50
 }
 
 function createOre(x, y, type)
@@ -47,6 +49,22 @@ function drawOre(ore)
     end
 
     love.graphics.draw(assets["img/ore_"..ore.type..".png"], ore.x - Player.camera.x, ore.y - Player.camera.y, 0, 0.5,0.5)
+end
+
+function pickOre()
+    local chances = {
+        {"iron", 0.1},
+        {"copper", 0.4},
+        {"stone", 1}
+    }
+
+    local roll = love.math.random()
+
+    for _, v in ipairs(chances) do
+        if roll <= v[2] then
+            return v[1]
+        end
+    end
 end
 
 function worldgen:generate()
@@ -94,12 +112,12 @@ function worldgen:generate()
             table.insert(self.world, abovenode)
         end
 
-        if love.math.random(1,7) == 1 then
-            table.insert(self.ores, createOre(x + width / 2, height + 980, "iron"))
+        if love.math.random(1,4) == 1 then
+            table.insert(self.ores, createOre(x + width / 2, height + 980, pickOre()))
         end
 
-        if love.math.random(1,7) == 1 and between then
-            table.insert(self.ores, createOre(x + width / 2, height2 + 530 + height, "iron"))
+        if love.math.random(1,4) == 1 and between then
+            table.insert(self.ores, createOre(x + width / 2, height2 + 530 + height, pickOre()))
         end
 
         x = x + width

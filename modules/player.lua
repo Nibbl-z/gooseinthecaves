@@ -3,6 +3,37 @@ require "yan"
 
 local player = {}
 
+items = {
+    stone = 1,
+    copper = 2,
+    iron = 3,
+    diamond = 4,
+    water = 5,
+    yeast = 6
+}
+
+itemData = {
+    [1] = {
+        name = "Stone",
+        img = "img/ore_stone.png"
+    },
+    [2] = {
+        name = "Copper Ore",
+        img = "img/ore_copper.png"
+    },
+    [3] = {
+        name = "Iron Ore",
+        img = "img/ore_iron.png"
+    },
+    [4] = {},
+    [5] = {},
+    [6] = {}
+}
+
+TOOLS = {
+    
+}
+
 function player:Init(world)
     self.body = love.physics.newBody(world, 0, 0, "dynamic")
     self.body:setLinearDamping(2)
@@ -16,7 +47,6 @@ function player:Init(world)
 
     self.maxHealth = 100
     self.health = self.maxHealth
-    
     
     self.speed = 6000
     self.jumpHeight = 3500
@@ -52,30 +82,90 @@ function player:Init(world)
     self.dmgOverlay = 0.0
     self.lastDmg = self.maxHealth
 
-    self.tools = {
-        [1] = {
+
+    TOOLS = {
+        {
             id = "pickaxe",
             img = assets["img/pickaxe.png"],
             rotation = 0,
-            click = function (this, x, y)
+            upgrades = {
+                {
+                    [items.stone] = 3
+                },
+                {
+                    [items.stone] = 5
+                },
+                {
+                    [items.stone] = 7,
+                    [items.copper] = 3
+                },
+                {
+                    [items.stone] = 10,
+                    [items.copper] = 5
+                },
+            },
+            strength = 0,
+            click = function (self, this, x, y)
                 this.rotation = math.rad(45)
 
                 tween:new(this, TweenInfo.new(0.3), {rotation = 0}):play()
 
                 for _, ore in ipairs(WorldGen.ores) do
-                    if biribiri.distance(x, y, ore.x, ore.y) < 75 then
+                    if biribiri.distance(x, y, ore.x, ore.y) < 75 and ore.progress ~= 0 then
                         ore.progress = math.clamp(ore.progress - 1, 0, math.huge)
+                        if ore.progress == 0 then
+                            self.inventory[items[ore.type]].amount = self.inventory[items[ore.type]].amount + 1
+                        end
                     end
                 end
             end
         }
+    }
+    self.tools = {
+        [1] = TOOLS[1]
     }
 
     self.inventory = {
         
     }
 
+    for k, v in pairs(items) do
+        self.inventory[v] = {
+            id = k,
+            amount = 0,
+            img = itemData[v].img or "img/goog.png"
+        }
+    end
+
     self.equipped = 1
+end
+
+function player:canUpgrade(tool)
+    local upgrade = self.tools[tool].upgrades[self.tools[tool].strength + 1]
+    if upgrade == nil then return false end
+
+    for id, amount in pairs(upgrade) do
+        if self.inventory[id].amount < amount then
+            return false
+        end
+    end
+
+    return true
+end
+
+function player:upgrade(tool)
+    if not self:canUpgrade(tool) then return end
+
+    local upgrade = self.tools[tool].upgrades[self.tools[tool].strength + 1]
+    if upgrade == nil then return end
+
+    for id, amount in pairs(upgrade) do
+        self.inventory[id].amount = self.inventory[id].amount - amount
+    end
+
+    self.tools[tool].strength = self.tools[tool].strength + 1
+
+    return true
 end
 
 local DASH_DIRECTIONS = {
@@ -195,7 +285,7 @@ function player:mousepressed(button)
     local dist = math.clamp(math.sqrt((mx) ^ 2 + (my) ^ 2), 10, 200)
 
     if button == 1 then
-        self.tools[self.equipped].click(self.tools[self.equipped], math.sin(angle) * dist + px + self.camera.x, math.cos(angle) * dist + py + self.camera.y)
+        self.tools[self.equipped].click(self, self.tools[self.equipped], math.sin(angle) * dist + px + self.camera.x, math.cos(angle) * dist + py + self.camera.y)
     end
 end
 
