@@ -53,10 +53,29 @@ function player:Init(world)
     self.lastDmg = self.maxHealth
 
     self.tools = {
-        pickaxe = {
-            img = assets["img/pickaxe.png"]
+        [1] = {
+            id = "pickaxe",
+            img = assets["img/pickaxe.png"],
+            rotation = 0,
+            click = function (this, x, y)
+                this.rotation = math.rad(45)
+
+                tween:new(this, TweenInfo.new(0.3), {rotation = 0}):play()
+
+                for _, ore in ipairs(WorldGen.ores) do
+                    if biribiri.distance(x, y, ore.x, ore.y) < 75 then
+                        ore.progress = math.clamp(ore.progress - 1, 0, math.huge)
+                    end
+                end
+            end
         }
     }
+
+    self.inventory = {
+        
+    }
+
+    self.equipped = 1
 end
 
 local DASH_DIRECTIONS = {
@@ -169,6 +188,17 @@ function player:Update(dt)
     self.lastDmg = self.health
 end
 
+function player:mousepressed(button)
+    local mx, my = love.mouse.getX() - 425, love.mouse.getY() - 325
+    local px, py = self.body:getX() + 25 - self.camera.x, self.body:getY() + 25 - self.camera.y
+    local angle = math.atan2(mx, my)
+    local dist = math.clamp(math.sqrt((mx) ^ 2 + (my) ^ 2), 10, 200)
+
+    if button == 1 then
+        self.tools[self.equipped].click(self.tools[self.equipped], math.sin(angle) * dist + px + self.camera.x, math.cos(angle) * dist + py + self.camera.y)
+    end
+end
+
 function player:reset()
     self.body:setLinearVelocity(0,0)
     self.body:setX(0)
@@ -178,7 +208,15 @@ function player:reset()
 end
 
 function player:Draw()
-    love.graphics.draw(self.spritesheet, self.quads[self.frame], self.body:getX() + 25 - self.camera.x, self.body:getY() + 25 - self.camera.y, 0, self.flipped and -1 or 1, 1, 25, 25)
+    local px, py = self.body:getX() + 25 - self.camera.x, self.body:getY() + 25 - self.camera.y
+    love.graphics.draw(self.spritesheet, self.quads[self.frame], px, py, 0, self.flipped and -1 or 1, 1, 25, 25)
+
+    local mx, my = love.mouse.getX() - 425, love.mouse.getY() - 325
+
+    local angle = math.atan2(mx, my)
+    local dist = math.clamp(math.sqrt((mx) ^ 2 + (my) ^ 2), 10, 200)
+
+    love.graphics.draw(self.tools[self.equipped].img, math.sin(angle) * dist + px, math.cos(angle) * dist + py, self.tools[self.equipped].rotation, 1, 1, 0, 50)
 end
 
 return player

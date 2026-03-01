@@ -1,5 +1,6 @@
 local worldgen = {}
 worldgen.world = {}
+worldgen.ores = {}
 
 function createNode(x, y, width, height)
     local body = love.physics.newBody(world, x + width / 2, y + height / 2, "static")
@@ -20,6 +21,34 @@ function createNode(x, y, width, height)
     return node
 end
 
+local ORE_STRENGTHS = {
+    iron = 3
+}
+
+function createOre(x, y, type)
+    local ore = {
+        x = x,
+        y = y,
+        type = type,
+        progress = ORE_STRENGTHS[type]
+    }
+
+    return ore
+end
+
+function drawOre(ore)
+    if ore.progress <= 0 then return end
+
+    if ore.progress ~= ORE_STRENGTHS[ore.type] then
+        love.graphics.rectangle("fill", ore.x - Player.camera.x, ore.y - Player.camera.y - 5, 64, 10)
+        love.graphics.setColor(1,0,0,1)
+        love.graphics.rectangle("fill", ore.x - Player.camera.x, ore.y - Player.camera.y - 5, 64 * (ore.progress / ORE_STRENGTHS[ore.type]), 10)
+        love.graphics.setColor(1,1,1,1)
+    end
+
+    love.graphics.draw(assets["img/ore_"..ore.type..".png"], ore.x - Player.camera.x, ore.y - Player.camera.y, 0, 0.5,0.5)
+end
+
 function worldgen:generate()
     local dirChange = 20
     local dir = true
@@ -27,7 +56,7 @@ function worldgen:generate()
     local height2 = 0
     local mult = 1.2
 
-    local x = 0
+    local x = -500
     local between = false
     local betweenChange = 30
 
@@ -58,11 +87,19 @@ function worldgen:generate()
 
         local width = love.math.random(100,200)
 
-        local node = createNode(x - 500, height + 1000, width, 500)
+        local node = createNode(x, height + 1000, width, 500)
 
         if between then
-            local abovenode = createNode(x - 500, height2 + 550 + height, width, 150)
+            local abovenode = createNode(x, height2 + 550 + height, width, 150)
             table.insert(self.world, abovenode)
+        end
+
+        if love.math.random(1,7) == 1 then
+            table.insert(self.ores, createOre(x + width / 2, height + 980, "iron"))
+        end
+
+        if love.math.random(1,7) == 1 and between then
+            table.insert(self.ores, createOre(x + width / 2, height2 + 530 + height, "iron"))
         end
 
         x = x + width
@@ -73,6 +110,10 @@ end
 function worldgen:draw()
     for i, node in ipairs(self.world) do
         love.graphics.rectangle("fill", node.x - Player.camera.x + 25, node.y - Player.camera.y + 25, node.width, node.height)
+    end
+
+    for _, ore in ipairs(self.ores) do
+        drawOre(ore)
     end
 end
 
