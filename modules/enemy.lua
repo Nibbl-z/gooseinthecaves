@@ -24,8 +24,8 @@ function enemy:new(x, y)
         runningFrame = 1,
         lastX = 0,
         dead = false,
-        health = 2,
-        maxHealth = 2,
+        health = difficulty * 1.5 + 0.5,
+        maxHealth = difficulty * 1.5 + 0.5,
         transparency = 1,
     }
 

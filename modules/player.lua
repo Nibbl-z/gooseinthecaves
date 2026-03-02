@@ -8,8 +8,6 @@ items = {
     copper = 2,
     iron = 3,
     diamond = 4,
-    water = 5,
-    yeast = 6
 }
 
 itemData = {
@@ -25,17 +23,18 @@ itemData = {
         name = "Iron Ore",
         img = "img/ore_iron.png"
     },
-    [4] = {},
-    [5] = {},
-    [6] = {}
+    [4] = {
+        name = "Diamond Ore",
+        img = "img/ore_diamond.png"
+    }
 }
 
 TOOLS = {
 
 }
 
-function player:Init(world)
-    self.body = love.physics.newBody(world, 0, 0, "dynamic")
+function player:Init(world,x,y)
+    self.body = love.physics.newBody(world, x,y, "dynamic")
     self.body:setLinearDamping(2)
     self.shape = love.physics.newRectangleShape(50, 50)
     self.fixture = love.physics.newFixture(self.body, self.shape)
@@ -49,7 +48,11 @@ function player:Init(world)
     self.maxHealth = 100
     self.health = self.maxHealth
 
+    self.deathOffset = 0
+    self.deathTransparency = 1
+
     self.thirst = 100
+    self.score = 0
 
     biribiri:CreateAndStartTimer(2, function ()
         if self.running then
@@ -58,12 +61,20 @@ function player:Init(world)
         
     end, true)
 
+    biribiri:CreateAndStartTimer(1.5, function ()
+        if self.thirst >= 80 and self.health ~= 0 then
+            self.health = math.clamp(self.health + 1, 0, self.maxHealth)
+        end
+    end, true)
+
     self.speed = 4000
     self.jumpHeight = 2500
     self.dashSpeed = 2000
+    self.gamespeed = 1
 
-    self.c = Vector2.new(0, 0)
-    self.camera = Vector2.new(0, 0)
+
+    self.c = Vector2.new(x,y)
+    self.camera = Vector2.new(x,y)
     self.camoffset = Vector2.new(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
 
     self.dashCooldown = 0
@@ -91,6 +102,7 @@ function player:Init(world)
 
     self.dmgOverlay = 0.0
     self.lastDmg = self.maxHealth
+    self.canReset = false
 
     self.heartSpritesheet = assets["img/heart.png"]
     self.heartQuads = {}
@@ -141,9 +153,30 @@ function player:Init(world)
                     [items.iron] = 3,
                 },
                 {
-                    [items.stone] = 25,
                     [items.copper] = 10,
                     [items.iron] = 5,
+                },
+                {
+                    [items.copper] = 15,
+                    [items.iron] = 7,
+                },
+                {
+                    [items.copper] = 15,
+                    [items.iron] = 7,
+                    [items.diamond] = 1,
+                },
+                {
+                    [items.copper] = 15,
+                    [items.iron] = 7,
+                    [items.diamond] = 2,
+                },
+                {
+                    [items.iron] = 10,
+                    [items.diamond] = 3,
+                },
+                {
+                    [items.iron] = 15,
+                    [items.diamond] = 4,
                 },
             },
             strength = 0,
@@ -155,7 +188,7 @@ function player:Init(world)
                 tween:new(this, TweenInfo.new(db), { rotation = 0 }):play()
                 this.debounce = db
 
-                for _, ore in ipairs(WorldGen.ores) do
+                for i, ore in ipairs(WorldGen.ores) do
                     if biribiri.distance(x, y, ore.x, ore.y) < 75 and this.strength < MINIMUM_ORE_TIER[ore.type] then
                         uis.game:addNotif("You need at least tier "..MINIMUM_ORE_TIER[ore.type].." to mine this!")
                     end
@@ -165,8 +198,17 @@ function player:Init(world)
                             self.thirst = math.clamp(self.thirst - 1, 0, 100)
                         end
                         if ore.progress == 0 then
+                            self.score = self.score + ORE_SCORE[ore.type]
                             uis.game:addNotif("Collected +1 " .. itemData[items[ore.type]].name)
                             self.inventory[items[ore.type]].amount = self.inventory[items[ore.type]].amount + 1
+
+                            local x, y = ore.x, ore.y
+
+                            table.remove(WorldGen.ores, i)
+
+                            biribiri:CreateAndStartTimer(30, function ()
+                                table.insert(WorldGen.ores, createOre(x, y, pickOre()))
+                            end)
                         end
                     end
                 end
@@ -211,9 +253,22 @@ function player:Init(world)
                     [items.iron] = 2,
                 },
                 {
-                    [items.stone] = 15,
                     [items.copper] = 15,
-                    [items.iron] = 3,
+                    [items.iron] = 4,
+                },
+                {
+                    [items.copper] = 15,
+                    [items.iron] = 5,
+                    [items.diamond] = 1
+                },
+                {
+                    [items.copper] = 20,
+                    [items.iron] = 7,
+                    [items.diamond] = 2
+                },
+                {
+                    [items.iron] = 20,
+                    [items.diamond] = 3
                 },
             },
             strength = 0,
@@ -226,11 +281,14 @@ function player:Init(world)
                 this.debounce = db
 
                 for _, enemy in ipairs(enemies) do
-                    if biribiri.distance(x, y, enemy.body:getX(), enemy.body:getY()) < 75 then
+                    if biribiri.distance(x, y, enemy.body:getX(), enemy.body:getY()) < 125 then
                         if love.math.random(1,4) == 1 then
                             self.thirst = math.clamp(self.thirst - 1, 0, 100)
                         end
                         enemy.health = math.clamp(enemy.health - ((this.strength * 0.5) + 1), 0, math.huge)
+                        if enemy.health <= 0 then
+                            self.score = self.score + 150
+                        end
                     end
                 end
             end
@@ -254,6 +312,24 @@ function player:Init(world)
     end
 
     self.equipped = 1
+end
+
+function player:reset2()
+    print("HELLO?????????????????????????????????????????????????????????????????????????????????????????????")
+    self.canReset = false
+    self.tools[1].strength = 0
+    self.tools[2].strength = 0
+
+    for k, v in pairs(self.inventory) do
+        v.amount = 0
+    end
+
+    self.health = 100
+    self.gamespeed = 1
+    self.deathOffset = 0
+    self.deathTransparency = 1
+    self.thirst = 100
+    self.body:setActive(true)
 end
 
 function player:canUpgrade(tool)
@@ -292,16 +368,43 @@ local DASH_DIRECTIONS = {
 }
 
 function player:takeDamage()
+    if self.health <= 0 then return end
     if self.dmgOverlay > 0.0 then return end
-    self.health = self.health - 1
+    self.health = math.clamp(self.health - difficulty * 2, 0, 100)
+
+
+    if self.health <= 0 then
+        tween:new(self, TweenInfo.new(2, EasingStyle.CubicInOut), {
+            deathTransparency = 0,
+            deathOffset = 300,
+            gamespeed = 0.1
+        }):play()
+        biribiri:CreateAndStartTimer(2.1, function ()
+            self.canReset = true
+        end)
+    end
 end
 
 function player:Update(dt)
+    if self.health == 0 then
+        self.body:setActive(false)
+
+        -- self.deathTransparency = self.deathTransparency - dt / 2
+        -- self.deathOffset = self.deathOffset + dt * 200
+        -- self.gamespeed = math.clamp(self.gamespeed - dt / 3, 0.1, 1)
+
+        return
+    end
+
+    self.gamespeed = 1
+    self.deathOffset = 0
+    self.deathTransparency = 1
+
     for k, v in pairs(self.tools) do
         v.debounce = math.clamp(v.debounce - dt, 0, 100)
     end
 
-    if self.health ~= self.lastDmg then
+    if self.health < self.lastDmg then
         --assets["audio/death.wav"]:play()
         self.dmgOverlay = 1.0
     end
@@ -401,7 +504,7 @@ function player:Update(dt)
     for _, water in ipairs(WorldGen.water) do
         if biribiri.collision(self.body:getX(), self.body:getY(), 50, 50, water.x, water.y - 10, water.width, water.height) then
             self.frame = 11
-            self.thirst = math.clamp(self.thirst + 0.01, 0, 100)
+            self.thirst = math.clamp(self.thirst + 0.03, 0, 100)
         end
     end
 
@@ -430,8 +533,9 @@ end
 
 function player:Draw()
     local px, py = self.body:getX() + 25 - self.camera.x, self.body:getY() + 25 - self.camera.y
-    love.graphics.draw(self.spritesheet, self.quads[self.frame], px, py, 0, self.flipped and -1 or 1, 1, 25, 25)
-
+    love.graphics.setColor(1,1,1,self.deathTransparency)
+    love.graphics.draw(self.spritesheet, self.quads[self.frame], px, py + self.deathOffset, 0, self.flipped and -1 or 1, 1, 25, 25)
+    love.graphics.setColor(1,1,1,1)
     local mx, my = love.mouse.getX() - 425, love.mouse.getY() - 325
 
     local angle = math.atan2(mx, my)

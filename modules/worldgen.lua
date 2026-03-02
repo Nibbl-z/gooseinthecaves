@@ -1,5 +1,6 @@
 local worldgen = {}
 worldgen.world = {}
+worldgen.worldOthers = {}
 worldgen.ores = {}
 worldgen.water = {}
 
@@ -36,13 +37,22 @@ end
 local ORE_STRENGTHS = {
     stone = 3,
     copper = 15,
-    iron = 75
+    iron = 75,
+    diamond = 200
+}
+
+ORE_SCORE = {
+    stone = 10,
+    copper = 50,
+    iron = 100,
+    diamond = 500
 }
 
 MINIMUM_ORE_TIER = {
     stone = 0,
     copper = 1,
-    iron = 3
+    iron = 3,
+    diamond = 6
 }
 
 function createOre(x, y, type)
@@ -71,7 +81,8 @@ end
 
 function pickOre()
     local chances = {
-        {"iron", 0.1},
+        {"diamond", 0.02},
+        {"iron", 0.15},
         {"copper", 0.4},
         {"stone", 1}
     }
@@ -96,7 +107,9 @@ function worldgen:generate()
     local between = false
     local betweenChange = 30
 
-    for i = 1, 1000 do
+    table.insert(self.world, createNode(x - 1000, -2000, 1000, 10000))
+    
+    for i = 1, 3000 do
         dirChange = dirChange - 1
         betweenChange = betweenChange - 1
 
@@ -119,11 +132,9 @@ function worldgen:generate()
         end
 
         height = height + love.math.random() * mult * (dir and 1 or -1) * 30
-        height2 = math.clamp(height2 + love.math.random() * (mult / 2) * (dir and 1 or -1) * 20, -math.huge, 100)
+        height2 = math.clamp(height2 + love.math.random() * (mult / 2) * (dir and 1 or -1) * 20, -100, 100)
 
         local width = love.math.random(100,250)
-
-        
 
         if love.math.random(1,5) == 1 and width >= 160 then
             table.insert(self.world, createNode(x, height + 1000, width/4, 1000))
@@ -137,6 +148,8 @@ function worldgen:generate()
             end
         end
 
+        table.insert(self.worldOthers, createNode(x, height - 200, width, 500))
+
         if between then
             local abovenode = createNode(x, height2 + 550 + height, width, 150)
             table.insert(self.world, abovenode)
@@ -148,6 +161,8 @@ function worldgen:generate()
 
         x = x + width
     end
+
+    table.insert(self.world, createNode(x, 500, -2000, 10000))
 end
 
 function worldgen:draw()
@@ -155,6 +170,11 @@ function worldgen:draw()
         love.graphics.draw(assets["img/water.png"], water.x - Player.camera.x + 25, water.y - Player.camera.y + 25, 0, water.width / 128, water.height / 128)
     end
     for i, node in ipairs(self.world) do
+
+        love.graphics.draw(assets["img/stone.png"], node.x - Player.camera.x + 25, node.y - Player.camera.y + 25, 0, node.width / 100, node.height / 100)
+    end
+
+    for i, node in ipairs(self.worldOthers) do
 
         love.graphics.draw(assets["img/stone.png"], node.x - Player.camera.x + 25, node.y - Player.camera.y + 25, 0, node.width / 100, node.height / 100)
     end
