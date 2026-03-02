@@ -156,6 +156,7 @@ function ui:init()
                     mousebutton1up = function(v) 
                         local result = Player:upgrade(1)
                         if result == true then
+                            assets["audio/select.wav"]:play()
                             self:updateRequirements("pickaxe", TOOLS[1].upgrades[Player.tools[1].strength + 1])
                         else
                             self:addNotif("Not enough resources!")
@@ -205,6 +206,7 @@ function ui:init()
                     mousebutton1up = function()
                         local result = Player:upgrade(2)
                         if result == true then
+                            assets["audio/select.wav"]:play()
                             self:updateRequirements("sword", TOOLS[2].upgrades[Player.tools[2].strength + 1])
                         else
                             self:addNotif("Not enough resources!")

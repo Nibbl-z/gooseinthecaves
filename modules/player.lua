@@ -197,7 +197,9 @@ function player:Init(world,x,y)
                         if love.math.random(1,4) == 1 then
                             self.thirst = math.clamp(self.thirst - 1, 0, 100)
                         end
+                        assets["audio/mine.wav"]:play()
                         if ore.progress == 0 then
+                            assets["audio/mineFinish.wav"]:play()
                             self.score = self.score + ORE_SCORE[ore.type]
                             uis.game:addNotif("Collected +1 " .. itemData[items[ore.type]].name)
                             self.inventory[items[ore.type]].amount = self.inventory[items[ore.type]].amount + 1
@@ -282,6 +284,7 @@ function player:Init(world,x,y)
 
                 for _, enemy in ipairs(enemies) do
                     if biribiri.distance(x, y, enemy.body:getX(), enemy.body:getY()) < 125 then
+                        assets["audio/damageEnemy.wav"]:play()
                         if love.math.random(1,4) == 1 then
                             self.thirst = math.clamp(self.thirst - 1, 0, 100)
                         end
@@ -405,7 +408,7 @@ function player:Update(dt)
     end
 
     if self.health < self.lastDmg then
-        --assets["audio/death.wav"]:play()
+        assets["audio/death.wav"]:play()
         self.dmgOverlay = 1.0
     end
 
@@ -457,7 +460,7 @@ function player:Update(dt)
         end
 
         if dashDir.x ~= 0 or dashDir.y ~= 0 then
-            --assets["audio/dash.wav"]:play()
+            assets["audio/dash.wav"]:play()
             self.dashFrameTimer = 0.3
             self.body:applyLinearImpulse(dashDir.x * self.dashSpeed, dashDir.y * self.dashSpeed * 3)
             self.dashCooldown = self.maxDashCooldown

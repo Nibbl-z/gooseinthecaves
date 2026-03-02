@@ -72,7 +72,12 @@ end
 
 function love.load()
     biribiri:LoadSprites("img")
+    biribiri:LoadAudio("audio", "static")
     WorldGen:generate()
+
+    assets["audio/music.wav"]:setVolume(0.2)
+    assets["audio/music.wav"]:setLooping(true)
+    assets["audio/music.wav"]:play()
 
     local chosenSpawn = WorldGen.world[love.math.random(300, #WorldGen.world - 300)]
     Player:Init(world, chosenSpawn.x, chosenSpawn.y)
